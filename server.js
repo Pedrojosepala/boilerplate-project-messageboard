@@ -1,8 +1,10 @@
 'use strict';
 require('dotenv').config({ path: './.env' });
-console.log("DB URI:", process.env.DB);
-if (!process.env.DB) {
-  throw new Error("La variable de entorno DB no está definida. Revisa .env");
+
+// --- Comprobamos variable de entorno ---
+console.log("DB URI:", process.env.MONGO_URI);
+if (!process.env.MONGO_URI) {
+  throw new Error("La variable de entorno MONGO_URI no está definida. Revisa Render o tu .env");
 }
 
 const express     = require('express');
@@ -35,7 +37,7 @@ app.route('/').get((req, res) => res.sendFile(process.cwd() + '/views/index.html
 fccTestingRoutes(app);
 
 // Routing for API: pasamos la URI de MongoDB
-apiRoutes(app, process.env.DB);
+apiRoutes(app, process.env.MONGO_URI);
 
 // 404 Not Found Middleware
 app.use((req, res, next) => {
