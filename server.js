@@ -1,5 +1,5 @@
 'use strict';
-require('dotenv').config({ path: './.env' });
+require('dotenv').config();
 
 // --- Comprobamos variable de entorno ---
 console.log("DB URI:", process.env.MONGO_URI);
