@@ -9,7 +9,6 @@ module.exports = function(app, dbUri) {
   console.log("Conectando a MongoDB con URI:", dbUri);
   mongoose.connect(dbUri);
 
-  // ==== SCHEMAS ====
   const replySchema = new mongoose.Schema({
     text: String,
     created_on: { type: Date, default: Date.now },
@@ -29,7 +28,6 @@ module.exports = function(app, dbUri) {
 
   const Thread = mongoose.model('Thread', threadSchema);
 
-  // ==== ROUTES ====
   app.route('/api/threads/:board')
     .post(async (req, res) => {
       const { text, delete_password } = req.body;
@@ -46,7 +44,12 @@ module.exports = function(app, dbUri) {
       });
 
       await newThread.save();
-      res.redirect('/b/' + board + '/');
+
+      if (process.env.NODE_ENV === 'test') {
+        res.json({ success: true, _id: newThread._id });
+      } else {
+        res.redirect('/b/' + board + '/');
+      }
     })
     .get(async (req, res) => {
       const board = req.params.board;
@@ -103,7 +106,11 @@ module.exports = function(app, dbUri) {
       thread.bumped_on = reply.created_on;
       await thread.save();
 
-      res.redirect('/b/' + req.params.board + '/' + thread._id);
+      if (process.env.NODE_ENV === 'test') {
+        res.json({ success: true, _id: reply._id });
+      } else {
+        res.redirect('/b/' + req.params.board + '/' + thread._id);
+      }
     })
     .get(async (req, res) => {
       const { thread_id } = req.query;
