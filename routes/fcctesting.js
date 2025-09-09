@@ -27,61 +27,70 @@
 
 'use strict';
 
-var cors = require('cors');
-var fs = require('fs');
-var runner = require('../test-runner');
+const cors = require('cors');
+const fs = require('fs');
+const runner = require('../test-runner');
 
-module.exports = function (app) {
+module.exports = function(app) {
 
+  // Rutas de código fuente
   app.route('/_api/server.js')
-    .get(function(req, res, next) {
-      console.log('requested');
-      fs.readFile(__dirname + '/server.js', function(err, data) {
+    .get((req, res, next) => {
+      fs.readFile(__dirname + '/server.js', (err, data) => {
         if(err) return next(err);
         res.send(data.toString());
       });
     });
+
   app.route('/_api/routes/api.js')
-    .get(function(req, res, next) {
-      console.log('requested');
-      fs.readFile(__dirname + '/routes/api.js', function(err, data) {
-        if(err) return next(err);
-        res.type('txt').send(data.toString());
-      });
-    });
-  app.route('/_api/controllers/convertHandler.js')
-    .get(function(req, res, next) {
-      console.log('requested');
-      fs.readFile(__dirname + '/controllers/convertHandler.js', function(err, data) {
+    .get((req, res, next) => {
+      fs.readFile(__dirname + '/routes/api.js', (err, data) => {
         if(err) return next(err);
         res.type('txt').send(data.toString());
       });
     });
 
-  app.get('/_api/get-tests', cors(), function(req, res, next){
-    console.log('requested');
-    if(process.env.NODE_ENV === 'test') return next();
-    res.json({status: 'unavailable'});
-  },
-  function(req, res, next){
-    if(!runner.report) return next();
-    res.json(testFilter(runner.report, req.query.type, req.query.n));
-  },
-  function(req, res){
-    runner.on('done', function(report){
-      process.nextTick(() =>  res.json(testFilter(runner.report, req.query.type, req.query.n)));
+  app.route('/_api/controllers/convertHandler.js')
+    .get((req, res, next) => {
+      fs.readFile(__dirname + '/controllers/convertHandler.js', (err, data) => {
+        if(err) return next(err);
+        res.type('txt').send(data.toString());
+      });
+    });
+
+  // Endpoint de tests
+  app.get('/_api/get-tests', cors(), (req, res, next) => {
+    if(process.env.NODE_ENV !== 'test') {
+      return res.json({ status: 'unavailable' });
+    }
+
+    // Ejecuta los tests solo la primera vez
+    if(!runner.started) {
+      runner.started = true;
+      runner.run();
+    }
+
+    // Si ya hay resultados, los devolvemos
+    if(runner.report) return res.json(testFilter(runner.report, req.query.type, req.query.n));
+
+    // Si no hay resultados, esperamos a que termine el runner
+    runner.once('done', () => {
+      res.json(testFilter(runner.report, req.query.type, req.query.n));
     });
   });
-  app.get('/_api/app-info', function(req, res) {
-    res.json({ headers: res.getHeaders()});
+
+  // Info de headers
+  app.get('/_api/app-info', (req, res) => {
+    res.json({ headers: res.getHeaders() });
   });
-  
+
 };
 
+// Filtra los tests por tipo
 function testFilter(tests, type, n) {
-  var out;
-  switch (type) {
-    case 'unit' :
+  let out;
+  switch(type) {
+    case 'unit':
       out = tests.filter(t => t.context.match('Unit Tests'));
       break;
     case 'functional':
@@ -90,8 +99,6 @@ function testFilter(tests, type, n) {
     default:
       out = tests;
   }
-  if(n !== undefined) {
-    return out[n] || out;
-  }
+  if(n !== undefined) return out[n] || out;
   return out;
 }
