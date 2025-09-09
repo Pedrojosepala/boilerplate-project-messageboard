@@ -45,10 +45,8 @@ app.use((req, res, next) => {
 });
 
 // Start server and tests
-const listener = app.listen(process.env.PORT || 3000, function() {
-  if (process.env.NODE_ENV !== 'test') {
-    console.log('Your app is listening on port ' + listener.address().port);
-  }
+const listener = app.listen(PORT, () => {
+  console.log("App listening on port " + PORT);
 });
 
 module.exports = app;
