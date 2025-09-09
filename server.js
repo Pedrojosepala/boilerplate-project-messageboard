@@ -1,7 +1,6 @@
 'use strict';
 require('dotenv').config();
 
-// --- Comprobamos variable de entorno ---
 console.log("DB URI:", process.env.MONGO_URI);
 if (!process.env.MONGO_URI) {
   throw new Error("La variable de entorno MONGO_URI no está definida. Revisa Render o tu .env");
@@ -11,6 +10,7 @@ const express     = require('express');
 const bodyParser  = require('body-parser');
 const cors        = require('cors');
 const helmet      = require('helmet');
+const mongoose    = require('mongoose');
 
 const apiRoutes         = require('./routes/api.js');
 const fccTestingRoutes  = require('./routes/fcctesting.js');
@@ -36,7 +36,7 @@ app.route('/').get((req, res) => res.sendFile(process.cwd() + '/views/index.html
 // For FCC testing purposes
 fccTestingRoutes(app);
 
-// Routing for API: pasamos la URI de MongoDB
+// Routing for API
 apiRoutes(app, process.env.MONGO_URI);
 
 // 404 Not Found Middleware
@@ -44,13 +44,18 @@ app.use((req, res, next) => {
   res.status(404).type('text').send('Not Found');
 });
 
-// Start server and tests
-const PORT = process.env.PORT || 3000;
+// --- Conexión Mongo ---
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+  .then(() => console.log("✅ MongoDB conectado"))
+  .catch(err => console.error("❌ Error conectando a MongoDB:", err));
 
-const listener = app.listen(PORT, () => {
-  if (process.env.NODE_ENV !== 'test') {
-    console.log('Your app is listening on port ' + PORT);
-  }
+// --- Start server ---
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log('Your app is listening on port ' + PORT);
 });
 
 module.exports = app;
